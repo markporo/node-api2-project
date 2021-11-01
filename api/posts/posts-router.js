@@ -27,20 +27,21 @@ router.get('/:id', async (req, res) => {
     }
 })
 
-//wtf
+
 // #### 3 [POST] /api/posts
-router.post("/", async (req, res) => {
+router.post("/", (req, res) => {
     console.log(req.body, "req.body")
-    if (!req.body.title || !req.body.content) {
-        return res.status(400).json({ message: "Please provide title and contents for the post" })
+    if (!req.body.title || !req.body.contents) {
+        res.status(400).json({ message: "Please provide title and contents for the post" })
     } else {
-        try {
-            const addPost = await posts.insert(req.body)
-            console.log(addPost);
-            //res.send(201).json({ data: addPost });
-        } catch {
-            res.status(500).json({ message: "There was an error while saving the post to the database" })
-        }
+        posts
+            .insert(req.body)
+            .then((data) => {
+                res.status(201).json({ title: req.body.title, contents: req.body.contents, id: data.id });
+            })
+            .catch(() => {
+                res.status(500).json({ message: "There was an error while saving the post to the database" })
+            })
     }
 })
 
@@ -50,35 +51,35 @@ router.put('/:id', async (req, res) => {
     let id = req.params.id
     const postToBeUpdated = await posts.findById(id)
     if (!postToBeUpdated) return res.status(404).json({ message: "The post with the specified ID does not exist" })
-
+    if (!req.body.title || !req.body.contents) {
+        return res.status(400).json({ message: "Please provide title and contents for the post" })
+    }
     posts
         .update(id, req.body)
         .then((updated) => {
-            console.log(updated);
-            if (!updated.title && !updated.content) {
-                return res.status(400).json({ message: "Please provide title and contents for the post" })
-            }
-            res.status(200).json({ data: updated })
+            console.log(updated, "updated post")
+            posts.findById(id).then((resultById) => { res.status(200).json(resultById) })
         })
         .catch(() => {
             res.status(500).json({ message: "The post information could not be modified" })
         })
 })
-// router.put(`/:id`, async (req, res) => {
+// router.put(`/:id`, (req, res) => {
 //     const id = req.params.id;
-//     if (!req.body.title && !req.body.content) {
-//         res
-//             .status(400)
-//             .send({ message: "Please provide title and contents for the post" });
+//     if (!req.body.title || !req.body.contents) {
+//         res.status(400).json({ message: "Please provide title and contents for the post" });
 //     } else {
-//         await posts
+//         posts
 //             .update(id, req.body)
 //             .then((postDesired) => {
-//                 return (postDesired === undefined || postDesired === null)
-//                     ? res.status(404).send({
+//                 console.log(postDesired, "postdesired from update")
+//                 if (!postDesired) {
+//                     res.status(404).send({
 //                         message: "The user with the specified ID does not exist",
 //                     })
-//                     : res.status(200).send(postDesired);
+//                 } else {
+//                     res.status(200).json(req.body);
+//                 }
 //             })
 //             .catch(() => {
 //                 res.status(500).json({ message: "The post information could not be modified" });
